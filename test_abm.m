@@ -4,12 +4,12 @@ fw = 6.88e-5;
 dw = 1.46e-5;
 th = 2.04e-4;
 
-area = 4.1e-4 * 0.98;
-obs = 5.0 * 1.2;
+area = 4.1e-4; %* 0.98;
+obs = 5.0; %* 1.2;
 
 %Following my TestABM script
-th = th * 0.8;
-fw = fw * 0.75 + 0.25 * dw;
+%th = th * 0.8;
+%fw = fw * 0.75 + 0.25 * dw;
 
 mesophyllFreshBulkDensity = fw  * 4.1e-4 * th * 0.8;
 
@@ -25,14 +25,23 @@ sample.epidermisCellCapsAspectRatio = 5;
 sample.spongyCellCapsAspectRatio = 5;
 sample.airVolumeFraction = 0;
 sample.spongyCellCapsAspectRatio = obs;
-
-interfaces = build_abmb_interfaces(sample, 400e-9)
-nSamples = 10000
-%'New code'
-%tic
-%[r, t, a] = ABM(0, -30 * pi/180, interfaces,nSamples)
-%toc
-'Old Code'
+nSamples = 1000000;
+wavelengths = 400e-9:100e-9:2000e-9;
+nWavelengths = length(wavelengths);
+reflectance = zeros(1, nWavelengths);
+transmittance = zeros(1, nWavelengths);
+absorptance = zeros(1, nWavelengths);
 tic
-[r, t, a] = ABM_pre_vectorize(0, -30 * pi/180, interfaces,nSamples)
+for n = 1:length(wavelengths)
+    interfaces = build_abm_interfaces(sample, wavelengths(n), 0);
+    [r, t, a] = ABM(0, -8 * pi/180, interfaces,nSamples);
+    reflectance(n) = r;
+    transmittance(n) = t;
+    absorptance(n) = a;
+end
 toc
+
+wavelengths
+reflectance
+transmittance
+absorptance
