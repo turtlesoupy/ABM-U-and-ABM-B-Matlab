@@ -1,15 +1,23 @@
 function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, interfaceArray, nSamples)
-    stepFunction  = @step;    
-    startState    = 1;
-    endState      = length(interfaceArray) + 1;
-    absorbedState = length(interfaceArray) + 2;
-    endStates = zeros(1, nSamples);
-    [x,y,z] = sph2cart(azimuthalI, polarI, 1);
+    stepFunction  = @step;     
+    [x,y,z] = sph2cart(azimuthalI, -polarI + pi/2, 1); %Match canonical
     startDirection = [x,y,z];
     
-    startSplits = find([interfaceArray.splitThicknessIndex]);
-    endSplits   = [interfaceArray(startSplits).splitThicknessIndex];
-    numSplits = length(startSplits);
+    if startDirection(3) < 0 
+         startState    = 1;
+         reflectedState = 0;
+         transmittedState = length(interfaceArray) + 1;
+    else
+        startState    = length(interfaceArray);  
+        reflectedState = length(interfaceArray) + 1;
+        transmittedState = 0;
+    end
+    
+    absorbedState   = length(interfaceArray) + 2;
+    endStates       = zeros(1, nSamples);
+    startSplits     = find([interfaceArray.splitThicknessIndex]);
+    endSplits       = [interfaceArray(startSplits).splitThicknessIndex];
+    numSplits       = length(startSplits);
     baseThicknesses = [interfaceArray.thickness];
     parfor i = 1:nSamples
         direction = startDirection;
@@ -24,21 +32,21 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         end
         
         [state, direction] = stepFunction(state, direction, thicknesses);
-        while(state ~= endState && state ~= 1 && state ~= absorbedState)
+        while(state ~= reflectedState && state ~= transmittedState && state ~= absorbedState)
             [state, direction] = stepFunction(state, direction, thicknesses);
         end
         
         endStates(i) = state;
-        
     end
     
-    reflectance   = sum(endStates == startState) / nSamples;
-    transmittance = sum(endStates == endState) / nSamples;
+    reflectance   = sum(endStates == reflectedState) / nSamples;
+    transmittance = sum(endStates == transmittedState) / nSamples;
     absorptance   = sum(endStates == absorbedState) / nSamples;
     
     function [outState, outVector] = step(state, vector, interfaceThicknesses)
         interface = interfaceArray(state);
         thickness = interfaceThicknesses(state);
+      %  state
         if vector(3) < 0 
             normal = [0,0,1];
             n1 = interface.n1;
@@ -46,15 +54,17 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
             perturbanceReflect = interface.perturbanceDownTop;
             perturbanceRefract = interface.perturbanceDownBottom;
             refractState = state + 1;
+            reflectState = state - 1;
         else
             normal = [0,0,-1];
             n1 = interface.n2;
             n2 = interface.n1;
             perturbanceReflect = interface.perturbanceUpBottom;
             perturbanceRefract = interface.perturbanceUpTop;
+            reflectState = state + 1;
             refractState = state - 1;
         end
-
+        
         normalAngle = -dot(vector, normal);
 
         %Check that we aren't absorbed here        
@@ -65,9 +75,9 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         else
             R = fresnelCoefficient(vector, normal, normalAngle, n1, n2);
             if rand() < R
-                outState = state;
+                outState = reflectState;
                 outVector = reflect(vector, normal, normalAngle);
-                if ~isinf(perturbanceRefract)
+                if ~isinf(perturbanceReflect)
                     outVector = brakkeScattering(outVector, perturbanceReflect);
                 end
             else
@@ -113,36 +123,68 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         R(rootTerm < 0 ) = 1; %Total internal reflection
     end
 
+    function [cart] = toCart(azimuthal, polar, basis)
+        sa = sin(azimuthal);
+        sp = sin(polar);
+        ca = cos(azimuthal);
+        cp = cos(polar);
+        cart = zeros(1,3);
+        cart(1) = sp .* ca;
+        cart(2) = sp .* sa;
+        cart(3) = cp;
+    end
+
+    function [u,v,w] = basis(vector)
+        u = vector / norm(vector);
+        u = u/norm(u);
+        w = cross(u, perpendicular(vector));
+        w = w/norm(w);
+        v = cross(w,u);     
+        v = v / norm(v);
+    end
+
+    function [perp] = perpendicular(vector)
+        perp = [vector(2), -vector(1), 0];
+        if abs(dot(vector, perp)) < 0.01
+            perp = [0, vector(3), -vector(2)];
+        end
+    end
+
     function [ perturbed ] = brakkeScattering(vector, delta)
         % Perturbs a vector according to exponentiated cosine distrubtion,
         % as described by Brakke et al. (1989)
-        %[theta, phi, r] = cart2sph(vector(1), vector(2), vector(3)); --
-        % WTF matlab
-        perturbed = -vector;
-        %Rejection sample, perturbing shouldn't flip reflect/refract
-        while(sign(perturbed(3)) ~= sign(vector(3)))
-            theta = acos(vector(3));
-            phi   = atan2(vector(2), vector(1));
-            alpha = acos(rand()^(1/(delta + 1)));
-            beta = 2*pi*rand();
-            perturbed = zeros(1,3);
 
-            newTheta = alpha + theta;
-            newPhi   = phi + beta;
-            st = sin(newTheta);
-            sp = sin(newPhi);
-            ct = cos(newTheta);
-            cp = cos(newPhi);
-
-            perturbed(1) = st .* cp;
-            perturbed(2) = st .* sp;
-            perturbed(3) = ct;
+        if abs(vector(1)) < abs(vector(2)) && abs(vector(1)) < abs(vector(3))
+            perp = [0, -vector(3), vector(2)];
+        elseif abs(vector(2)) < abs(vector(3))
+            perp = [vector(3), 0, -vector(1)];
+        else
+            perp = [-vector(2), vector(1), 0];
         end
 
-        %[x,y,z] = sph2cart(theta + beta, phi+alpha,1);
-        %perturbed(1) = x;
-        %perturbed(2) = y;
-        %perturbed(3) = z;
+        w = vector / norm(vector);
+        u = perp / norm(perp);
+        % u = u - w * dot(w,u)
+        % u = u / norm(u);
+        v = cross(w,u);
+        perturbed = -vector;
+        i = 0;
+        while(sign(perturbed(3)) ~= sign(vector(3)))
+           polar = acos(rand^(1/(delta + 1)));
+           azimuthal  = 2*pi*rand;
+           sp = sin(polar);
+           sa = sin(azimuthal);
+           cp = cos(polar);
+           ca = cos(azimuthal);
+
+           perturbed = u * (sp * ca) + (v * sp * sa) + (w * cp);  
+           i = i + 1;
+           if i >= 100
+               fprintf('Broke infinite loop for perturbing\n');
+               perturbed = vector;
+               return;
+           end
+        end
     end
 
 end
