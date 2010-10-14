@@ -50,6 +50,7 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
          
     
     refractiveIndexAir = 1;
+    %refractiveIndexMesophyll = 1.415;
     refractiveIndexMesophyll = 1.415;
     refractiveIndexAntidermalWall = (1 - sample.antidermalScattererFraction) * ...
         refractiveIndexWater + 1.535 * sample.antidermalScattererFraction;
@@ -70,6 +71,8 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
         airCuticle.perturbanceDownBottom = sample.epidermisCellCapsAspectRatio;
         airCuticle.perturbanceUpBottom   = sample.epidermisCellCapsAspectRatio;
 
+        
+        mesophyllThickness = 0.8 * sample.wholeLeafThickness;
         epidermisMesophyll = interfaceStruct;
         epidermisMesophyll.name = 'Adaxial Epidermis<->Mesophyll';
         epidermisMesophyll.n1 = refractiveIndexCuticle;
@@ -78,6 +81,9 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
         epidermisMesophyll.perturbanceUpTop       = epidermisMesophyll.perturbanceDownTop;
         epidermisMesophyll.perturbanceDownBottom  = sample.spongyCellCapsAspectRatio; 
         epidermisMesophyll.perturbanceUpBottom    = epidermisMesophyll.perturbanceDownBottom;
+        epidermisMesophyll.thicknessBelow         = mesophyllThickness;
+        epidermisMesophyll.absorptionBelow        = mesophyllAbsorption;        
+        epidermisMesophyll.splitBelow             = 1;
 
         mesophyllAir = interfaceStruct;
         mesophyllAir.name = 'Mesophyll<->Air';
@@ -87,9 +93,9 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
         mesophyllAir.perturbanceUpTop      = mesophyllAir.perturbanceDownTop;
         mesophyllAir.perturbanceDownBottom = sample.spongyCellCapsAspectRatio;
         mesophyllAir.perturbanceUpBottom   = mesophyllAir.perturbanceDownBottom;
-        mesophyllAir.splitThicknessIndex   = 4;
-        mesophyllAir.thickness             = 0.8 * sample.wholeLeafThickness; %Unifacial ratio
-        mesophyllAir.absorptionCoefficient  = mesophyllAbsorption;
+        mesophyllAir.thicknessAbove        = mesophyllThickness;
+        mesophyllAir.absorptionAbove       = mesophyllAbsorption;
+        mesophyllAir.splitAbove            = 1;
         
         airMesophyll = interfaceStruct;
         airMesophyll.name = 'Air<->Mesophyll';
@@ -99,8 +105,9 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
         airMesophyll.perturbanceUpTop      = airMesophyll.perturbanceDownTop;
         airMesophyll.perturbanceDownBottom = sample.spongyCellCapsAspectRatio;
         airMesophyll.perturbanceUpBottom   = airMesophyll.perturbanceDownBottom;
-        airMesophyll.thickness             = 0.8 * sample.wholeLeafThickness; %Unifacial ratio
-        airMesophyll.absorptionCoefficient  = mesophyllAbsorption;
+        airMesophyll.thicknessBelow        = mesophyllThickness;
+        airMesophyll.absorptionBelow       = mesophyllAbsorption;
+        airMesophyll.splitBelow            = 2;
 
         mesophyllEpidermis = interfaceStruct;
         mesophyllEpidermis.name = 'Mesophyll<->Abaxial Epidermis';
@@ -110,6 +117,9 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
         mesophyllEpidermis.perturbanceUpTop      = mesophyllEpidermis.perturbanceDownTop;
         mesophyllEpidermis.perturbanceDownBottom = sample.epidermisCellCapsAspectRatio;
         mesophyllEpidermis.perturbanceUpBottom   = mesophyllEpidermis.perturbanceDownBottom;
+        mesophyllEpidermis.thicknessAbove        = mesophyllThickness;
+        mesophyllEpidermis.absorptionAbove       = mesophyllAbsorption;
+        mesophyllEpidermis.splitAbove            = 2;
 
         epidermisAir = interfaceStruct;
         epidermisAir.name = 'Abaxial Epidermis<->Air';
@@ -117,8 +127,9 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
         epidermisAir.n2   = refractiveIndexAir;
         epidermisAir.perturbanceDownTop    = sample.spongyCellCapsAspectRatio;
         epidermisAir.perturbanceUpTop      = epidermisAir.perturbanceDownTop;
-        epidermisAir.perturbanceUpBottom   = sample.epidermisCellCapsAspectRatio;
-
+        %epidermisAir.perturbanceUpBottom   =
+        %sample.epidermisCellCapsAspectRatio; bug?
+        epidermisAir.perturbanceUpBottom   = sample.cuticleUndulationsAspectRatio;
         interfaces = repmat(abm_interface(), 1, 6);
         interfaces(1) = airCuticle;
         interfaces(2) = epidermisMesophyll;
