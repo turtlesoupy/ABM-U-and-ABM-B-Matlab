@@ -1,7 +1,9 @@
 function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, interfaceArray, nSamples)
     stepFunction  = @step;     
     [x,y,z] = sph2cart(azimuthalI, -polarI + pi/2, 1); %Match canonical
-    startDirection = [x;y;z];
+    
+    
+    startDirection = [x;y;z]
     
     if startDirection(3) < 0 
          startState    = 1;
@@ -21,7 +23,7 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
     splitBelowEnd   = [interfaceArray.splitBelow] == 2;
     thicknessAbove  = [interfaceArray.thicknessAbove];
     thicknessBelow  = [interfaceArray.thicknessBelow];
-    parfor i = 1:nSamples
+    parfor sampleI = 1:nSamples
         direction = startDirection;
         state = startState;
 
@@ -35,7 +37,6 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         splitThicknessBelow(splitBelowStart) = splitThicknessBelow(splitBelowStart) * p;
         splitThicknessBelow(splitBelowEnd)   = splitThicknessBelow(splitBelowEnd) * (1-p);
   
- 
         [state, direction] = stepFunction(interfaceArray(state), state,  ...
             direction, splitThicknessAbove(state), splitThicknessBelow(state));
         while(state ~= reflectedState && state ~= transmittedState && state ~= absorbedState)
@@ -43,7 +44,7 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
                 direction, splitThicknessAbove(state), splitThicknessBelow(state));
         end
         
-        endStates(i) = state;
+        endStates(sampleI) = state;
     end
     
     reflectance   = sum(endStates == reflectedState) / nSamples;
@@ -123,13 +124,17 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         sinISquared = 1 - cosI^2;
         nSquared = (n1/n2)^2;
         rootTerm = 1-nSquared *sinISquared;
+        if rootTerm < 0 %Total internal reflection
+            R =  1;
+            return;
+        end
+        
         rootedTerm = sqrt(rootTerm);
 
         rS = ((n1*cosI - n2*rootedTerm) / (n1*cosI + n2*rootedTerm))^2;
         rP = ((n1*rootedTerm - n2*cosI)/ (n1*rootedTerm +n2*cosI))^2;
 
         R = (rS + rP) / 2;
-        R(rootTerm < 0 ) = 1; %Total internal reflection
     end
 
     function [ perturbed ] = brakkeScattering(vector, delta)
@@ -148,7 +153,12 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         u = perp / norm(perp);
         % u = u - w * dot(w,u)
         % u = u / norm(u);
-        v = cross(w,u);
+        % v = cross(w,u);
+        v = [
+          w(2)*u(3) - w(3)*u(2);
+          w(3)*u(1) - w(1)*u(3);
+          w(1)*u(2) - w(2)*u(1);
+        ];
         perturbed = -vector;
         i = 0;
         while(sign(perturbed(3)) ~= sign(vector(3)))

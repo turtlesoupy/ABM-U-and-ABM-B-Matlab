@@ -1,0 +1,38 @@
+mdlflAsc
+
+cmr "camera"
+pnhl
+-3.0  4.5 4.9 
+0.0 -0.5 0.0
+0.0 1.0 0.0
+50.0
+endLst
+endObjct
+
+
+
+
+mtrl "leaf" 
+uniVIS 
+0.003 0.00083 0.00066  0.2531 0.2399 4.1 0.0668 0.0146 0.01632 0.01629 10.0 5.0  5.0 1.0 1.0 4.0
+endLst
+endObjct
+
+
+
+
+msh "sample" "leaf"
+ vrtxPstn
+ -5.0 -2.0 0.0 
+ -5.0 2.0 0.0 
+ 5.0 2.0 0.0 
+ 5.0 -2.0 0.0 
+ endLst
+ trngl
+    0.0 2.0 1.0
+    0.0 3.0 2.0
+  endLst
+ endObjct
+
+
+% a comment
