@@ -34,7 +34,7 @@ sample.spongyCellCapsAspectRatio = 5;
 sample.airVolumeFraction = 0;
 sample.spongyCellCapsAspectRatio = obs;
 nSamples = 100000;
-wavelengths = 400e-9:5e-9:700e-9;
+wavelengths = 400e-9:5e-9:2500e-9;
 nWavelengths = length(wavelengths);
 reflectance = zeros(1, nWavelengths);
 transmittance = zeros(1, nWavelengths);
@@ -47,7 +47,7 @@ for n = 1:length(wavelengths)
     tic
     fprintf('Wavelength %d\n', wavelengths(n))
     
-    interfaces = build_abm_interfaces(sample, wavelengths(n), 0);
+    interfaces = build_merged_interfaces(sample, wavelengths(n), 0);
     [r, t, a] = ABM(0, incidentAngle, interfaces,nSamples);
     reflectance(n) = r;
     transmittance(n) = t;
@@ -56,7 +56,7 @@ for n = 1:length(wavelengths)
 end 
 toc
 
-save visibleRedux2.mat
+save merged.mat
 
 wavelengths
 reflectance

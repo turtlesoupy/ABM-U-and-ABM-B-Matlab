@@ -1,9 +1,7 @@
 function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, interfaceArray, nSamples)
     stepFunction  = @step;     
     [x,y,z] = sph2cart(azimuthalI, -polarI + pi/2, 1); %Match canonical
-    
-    
-    startDirection = [x;y;z]
+    startDirection = [x;y;z];
     
     if startDirection(3) < 0 
          startState    = 1;

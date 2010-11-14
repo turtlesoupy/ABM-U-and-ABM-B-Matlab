@@ -1,27 +1,19 @@
-function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
+function [interfaces] = build_abm_interfaces(sample, wavelength)
+
+    bifacial = 0;
     l= load('tissue_lookups.mat');
 
     interpolationMethod = 'linear';
 
-    dryMatterConcentration = sample.dryBulkDensity / ...
-        (1 - sample.airVolumeFraction);
-    
-    proteinConcentration     = dryMatterConcentration * ...
-        sample.proteinFraction;
-    celluloseConcentration   = dryMatterConcentration * ...
-        sample.celluloseFraction;
-    linginConcentration      = dryMatterConcentration * ...
-        sample.ligninFraction;
-    
     proteinSAC = interp1(l.proteinSACWavelengthLookup, l.proteinSACLookup, wavelength, ...
         interpolationMethod, 'extrap');
     
     celluloseLinginSAC = interp1(l.celluloseLinginSACWavelengthLookup, l.celluloseLinginSACLookup, ...
         wavelength, interpolationMethod, 'extrap');
     
-    proteinAbsorptionCoefficient   = proteinConcentration * proteinSAC;
-    celluloseAbsorptionCoefficient = celluloseConcentration * celluloseLinginSAC;
-    linginAbsorptionCoefficient    = linginConcentration * celluloseLinginSAC;
+    proteinAbsorptionCoefficient   = sample.proteinConcentration   * proteinSAC;
+    celluloseAbsorptionCoefficient = sample.celluloseConcentration * celluloseLinginSAC;
+    linginAbsorptionCoefficient    = sample.linginConcentration    * celluloseLinginSAC;
 
     
     chlorophyllAbsorption = ...
@@ -51,7 +43,6 @@ function [interfaces] = build_abm_interfaces(sample, wavelength, bifacial)
          
     
     refractiveIndexAir = 1;
-    %refractiveIndexMesophyll = 1.415;
     refractiveIndexMesophyll = 1.415;
     refractiveIndexAntidermalWall = (1 - sample.antidermalScattererFraction) * ...
         refractiveIndexWater + 1.535 * sample.antidermalScattererFraction;
