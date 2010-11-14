@@ -1,53 +1,50 @@
-function [interfaces] = build_abm_interfaces(sample, wavelength)
+function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
+    DATA_DIR           = 'data/all/';
+    CAROTENOIDS_FILE   = [DATA_DIR, 'caro-PAS-400-2500.txt'];
+    CELLULOSE_FILE     = [DATA_DIR, 'cellulose400-2500.txt'];
+    CHLOROPHYLL_FILE   = [DATA_DIR, 'chloAB-DFA-400-2500.txt'];
+    PROTEIN_FILE       = [DATA_DIR, 'protein400-2500.txt'];
+    MESOPHYLL_RI_FILE  = [DATA_DIR, 'rmH400-2500.txt'];
+    WATER_SAC_FILE     = [DATA_DIR, 'sacwH400-2500.txt'];
+    CUTICLE_RI_FILE    = [DATA_DIR, 'rcH400-2500.txt'];
+    ANTIDERMAL_RI_FILE = [DATA_DIR, 'raH400-2500.txt'];
 
-    bifacial = 0;
-    l= load('tissue_lookups.mat');
+    DATA_WAVELENGTHS = 400e-9:5e-9:2500e-9;
+    
+    CAROTENOIDS_ABSORPTION_LOOKUP = load(CAROTENOIDS_FILE)' ./ 10;
+    CELLULOSE_ABSORPTION_LOOKUP = load(CELLULOSE_FILE)' ./ 10;
+    CHLOROPHYLL_ABSORPTION_LOOKUP = load(CHLOROPHYLL_FILE)' ./ 10;
+    PROTEIN_ABSORPTION_LOOKUP = load(PROTEIN_FILE)' ./ 10;
+    WATER_SAC_LOOKUP = load(WATER_SAC_FILE)' .* 100;
+    MESOPHYLL_RI_LOOKUP = load(MESOPHYLL_RI_FILE);
+    CUTICLE_RI_LOOKUP = load(CUTICLE_RI_FILE)';
+    ANTIDERMAL_RI_LOOKUP = load(ANTIDERMAL_RI_FILE)';
 
-    interpolationMethod = 'linear';
+    interpFunc = @(lookup) interp1(DATA_WAVELENGTHS, lookup, wavelength, ... 
+                    'linear', 'extrap');
 
-    proteinSAC = interp1(l.proteinSACWavelengthLookup, l.proteinSACLookup, wavelength, ...
-        interpolationMethod, 'extrap');
+    proteinAbsorptionCoefficient     = sample.proteinConcentration * interpFunc(PROTEIN_ABSORPTION_LOOKUP);
+    chlorophyllAbsorptionCoefficient = (sample.chlorophyllAConcentration + sample.chlorophyllBConcentration) ...
+                                        * interpFunc(CHLOROPHYLL_ABSORPTION_LOOKUP);
+    carotenoidAbsorptionCoefficient  = sample.carotenoidConcentration * interpFunc(CAROTENOIDS_ABSORPTION_LOOKUP);
+    celluloseAbsorptionCoefficient   = sample.celluloseConcentration  * interpFunc(CELLULOSE_ABSORPTION_LOOKUP);
+    linginAbsorptionCoefficient      = sample.linginConcentration * interpFunc(CELLULOSE_ABSORPTION_LOOKUP);
     
-    celluloseLinginSAC = interp1(l.celluloseLinginSACWavelengthLookup, l.celluloseLinginSACLookup, ...
-        wavelength, interpolationMethod, 'extrap');
-    
-    proteinAbsorptionCoefficient   = sample.proteinConcentration   * proteinSAC;
-    celluloseAbsorptionCoefficient = sample.celluloseConcentration * celluloseLinginSAC;
-    linginAbsorptionCoefficient    = sample.linginConcentration    * celluloseLinginSAC;
+    waterAbsorptionCoefficient = interpFunc(WATER_SAC_LOOKUP);
 
+    mesophyllAbsorption = chlorophyllAbsorptionCoefficient + ...
+                          carotenoidAbsorptionCoefficient + ...
+                          celluloseAbsorptionCoefficient + ...
+                          proteinAbsorptionCoefficient  + ...
+                          linginAbsorptionCoefficient + ...
+                          waterAbsorptionCoefficient;
     
-    chlorophyllAbsorption = ...
-        (sample.chlorophyllAConcentration + ...
-         sample.chlorophyllBConcentration) * ...
-         interp1(l.chlorophyllSACWavelengthLookup, l.chlorophyllSACLookup, wavelength, ...
-              interpolationMethod, 'extrap');
-     
-    cartenoidsAbsorption = sample.carotenoidMesophyllConcentration * ...
-         interp1(l.caretonoidSACWavelengthLookup, l.caretonoidSACLookup, wavelength, ...
-            interpolationMethod, 'extrap');
-    
-    waterAbsorption = interp1(l.waterSACWavelengthLookup, l.waterSACLookup, wavelength, ...
-            interpolationMethod, 'extrap');
-      
-    mesophyllAbsorption = chlorophyllAbsorption + cartenoidsAbsorption + ...
-        proteinAbsorptionCoefficient + celluloseAbsorptionCoefficient + ...
-        linginAbsorptionCoefficient + waterAbsorption;
-     
-    refractiveIndexCuticle =  ...
-        interp1(l.refractiveIndexCuticleWavelengthLookup, l.refractiveIndexCuticleLookup, ...
-            wavelength,	interpolationMethod, 'extrap');
-        
-    refractiveIndexWater = ...
-         interp1(l.refractiveIndexWaterWavelengthLookup, l.refractiveIndexWaterLookup, ...
-            wavelength,	interpolationMethod, 'extrap');
-         
-    
+    refractiveIndexCuticle        = interpFunc(CUTICLE_RI_LOOKUP);
+    refractiveIndexMesophyll      = interpFunc(MESOPHYLL_RI_LOOKUP);
+    refractiveIndexAntidermalWall = interpFunc(ANTIDERMAL_RI_LOOKUP);
     refractiveIndexAir = 1;
-    refractiveIndexMesophyll = 1.415;
-    refractiveIndexAntidermalWall = (1 - sample.antidermalScattererFraction) * ...
-        refractiveIndexWater + 1.535 * sample.antidermalScattererFraction;
     
-    if bifacial
+    if sample.bifacial
         interfaces = ABMB_interfaces();
     else
         interfaces = ABMU_interfaces();
@@ -119,8 +116,6 @@ function [interfaces] = build_abm_interfaces(sample, wavelength)
         epidermisAir.n2   = refractiveIndexAir;
         epidermisAir.perturbanceDownTop    = sample.spongyCellCapsAspectRatio;
         epidermisAir.perturbanceUpTop      = epidermisAir.perturbanceDownTop;
-        %epidermisAir.perturbanceUpBottom   =
-        %sample.epidermisCellCapsAspectRatio; bug?
         epidermisAir.perturbanceUpBottom   = sample.cuticleUndulationsAspectRatio;
         interfaces = repmat(abm_interface(), 1, 6);
         interfaces(1) = airCuticle;
