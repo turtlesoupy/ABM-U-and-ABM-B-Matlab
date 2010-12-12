@@ -1,5 +1,6 @@
-function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
-    DATA_DIR           = 'data/all/';
+function [interfaces] = build_interfaces(sample, wavelength)
+    [PATHSTR, NAME, EXT] = fileparts(which('build_interfaces.m'));
+    DATA_DIR           = [PATHSTR,  '/data/all/'];
     CAROTENOIDS_FILE   = [DATA_DIR, 'caro-PAS-400-2500.txt'];
     CELLULOSE_FILE     = [DATA_DIR, 'cellulose400-2500.txt'];
     CHLOROPHYLL_FILE   = [DATA_DIR, 'chloAB-DFA-400-2500.txt'];
@@ -43,6 +44,8 @@ function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
     refractiveIndexMesophyll      = interpFunc(MESOPHYLL_RI_LOOKUP);
     refractiveIndexAntidermalWall = interpFunc(ANTIDERMAL_RI_LOOKUP);
     refractiveIndexAir = 1;
+
+    mesophyllThickness = sample.mesophyllFraction * sample.wholeLeafThickness;
     
     if sample.bifacial
         interfaces = ABMB_interfaces();
@@ -61,7 +64,6 @@ function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
         airCuticle.perturbanceUpBottom   = sample.epidermisCellCapsAspectRatio;
 
         
-        mesophyllThickness = 0.8 * sample.wholeLeafThickness;
         epidermisMesophyll = interfaceStruct;
         epidermisMesophyll.name = 'Adaxial Epidermis<->Mesophyll';
         epidermisMesophyll.n1 = refractiveIndexCuticle;
@@ -127,8 +129,9 @@ function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
     end
 
     function [interfaces] = ABMB_interfaces()
+        
+           
         interfaceStruct = abm_interface();
-
         airCuticle = interfaceStruct;
         airCuticle.name = 'Air<->Adaxial Epidermis';
         airCuticle.n1 = refractiveIndexAir;
@@ -146,8 +149,8 @@ function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
         epidermisMesophyll.perturbanceUpTop       = epidermisMesophyll.perturbanceDownTop;
         epidermisMesophyll.perturbanceDownBottom  = sample.palisadeCellCapsAspectRatio;
         epidermisMesophyll.perturbanceUpBottom    = epidermisMesophyll.perturbanceDownBottom;
-        epidermisMesophyll.thickness              = 0.5 * sample.wholeLeafThickness; %Bifacial ratio
-        epidermisMesophyll.absorptionCoefficient  = mesophyllAbsorption;
+        epidermisMesophyll.thicknessBelow         = mesophyllThickness;
+        epidermisMesophyll.absorptionBelow        = mesophyllAbsorption;
         
         mesophyllAir = interfaceStruct;
         mesophyllAir.name = 'Mesophyll<->Air';
@@ -157,7 +160,8 @@ function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
         mesophyllAir.perturbanceUpTop      = mesophyllAir.perturbanceDownTop;
         mesophyllAir.perturbanceDownBottom = sample.spongyCellCapsAspectRatio;
         mesophyllAir.perturbanceUpBottom   = mesophyllAir.perturbanceDownBottom;
-        
+        mesophyllAir.absorptionAbove       = mesophyllAbsorption;
+        mesophyllAir.thicknessAbove        = mesophyllThickness;
         
         airAntidermalWall = interfaceStruct;
         airAntidermalWall.name = 'Air<->Antidermal Wall';
@@ -169,7 +173,7 @@ function [interfaces] = build_merged_interfaces(sample, wavelength, bifacial)
         antidermalWallCuticle.n1 = refractiveIndexAntidermalWall;
         antidermalWallCuticle.n2 = refractiveIndexCuticle;
         antidermalWallCuticle.perturbanceDownBottom = sample.epidermisCellCapsAspectRatio;
-        antidermalWallCuticle.perturbanceUpBottom = antidermalWallCuticle.perturbanceDownBottom;
+        antidermalWallCuticle.perturbanceUpBottom   = antidermalWallCuticle.perturbanceDownBottom;
         
         cuticleAir = interfaceStruct;
         cuticleAir.name = 'Abaxial Epidermis<->Air';
