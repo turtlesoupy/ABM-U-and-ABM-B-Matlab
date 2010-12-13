@@ -1,0 +1,21 @@
+ABM-B and ABM-U (Matlab version)
+
+This is a reference implementation of the ABM-B and ABM-U models described in
+http://www.npsg.uwaterloo.ca/resources/docs/rse2006.pdf, with modifications
+described in http://www.npsg.uwaterloo.ca/resources/docs/ieee07-8.pdf
+
+The package is licensed under a BSD license, described in LICENSE. 
+
+This was released by the Natural Phenomenon Simulation Group at University of
+Waterloo in Waterloo, Ontario, Canada. Please visit http://www.npsg.uwaterloo.ca
+for more information.
+
+Usage:
+    See abmb_example.m and abmu_example.m
+
+Requirements:
+    Matlab (Octave won't work)
+
+Notes: 
+    The simulation uses the parallel computing toolbox. Make sure you have a
+    pool open for a speedup.
