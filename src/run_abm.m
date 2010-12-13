@@ -1,4 +1,4 @@
-function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, interfaceArray, nSamples)
+function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI, interfaceArray, nSamples)
     stepFunction  = @step;     
     [x,y,z] = sph2cart(azimuthalI, -polarI + pi/2, 1); %Match canonical
     startDirection = [x;y;z];
@@ -31,9 +31,9 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
         splitThicknessBelow = thicknessBelow;
 
         splitThicknessAbove(splitAboveStart) = splitThicknessAbove(splitAboveStart) * p;
-        splitThicknessAbove(splitAboveEnd)   = splitThicknessAbove(splitAboveEnd) * (1-p);
+        splitThicknessAbove(splitAboveEnd)   = splitThicknessAbove(splitAboveEnd)   * (1-p);
         splitThicknessBelow(splitBelowStart) = splitThicknessBelow(splitBelowStart) * p;
-        splitThicknessBelow(splitBelowEnd)   = splitThicknessBelow(splitBelowEnd) * (1-p);
+        splitThicknessBelow(splitBelowEnd)   = splitThicknessBelow(splitBelowEnd)   * (1-p);
   
         [state, direction] = stepFunction(interfaceArray(state), state,  ...
             direction, splitThicknessAbove(state), splitThicknessBelow(state));
@@ -149,16 +149,14 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
 
         w = vector / norm(vector);
         u = perp / norm(perp);
-        % u = u - w * dot(w,u)
-        % u = u / norm(u);
-        % v = cross(w,u);
+        % v = cross(w,u); 
         v = [
           w(2)*u(3) - w(3)*u(2);
           w(3)*u(1) - w(1)*u(3);
           w(1)*u(2) - w(2)*u(1);
-        ];
+        ]; %cross product speedup
+    
         perturbed = -vector;
-        i = 0;
         while(sign(perturbed(3)) ~= sign(vector(3)))
            polar = acos(rand^(1/(delta + 1)));
            azimuthal  = 2*pi*rand;
@@ -168,12 +166,6 @@ function [reflectance, transmittance, absorptance] = ABM(azimuthalI, polarI, int
            ca = cos(azimuthal);
 
            perturbed = u * (sp * ca) + (v * sp * sa) + (w * cp);  
-           i = i + 1;
-           if i >= 100
-               fprintf('Broke infinite loop for perturbing\n');
-               perturbed = vector;
-               return;
-           end
         end
     end
 

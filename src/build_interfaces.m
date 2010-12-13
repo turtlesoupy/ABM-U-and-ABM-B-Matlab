@@ -1,6 +1,6 @@
-function [interfaces] = build_interfaces(sample, wavelength)
+function [interfaces] = build_interfaces(sample, wavelength, bifacial)
     [PATHSTR, NAME, EXT] = fileparts(which('build_interfaces.m'));
-    DATA_DIR           = [PATHSTR,  '/data/all/'];
+    DATA_DIR           = [PATHSTR,  '/../data/'];
     CAROTENOIDS_FILE   = [DATA_DIR, 'caro-PAS-400-2500.txt'];
     CELLULOSE_FILE     = [DATA_DIR, 'cellulose400-2500.txt'];
     CHLOROPHYLL_FILE   = [DATA_DIR, 'chloAB-DFA-400-2500.txt'];
@@ -47,7 +47,7 @@ function [interfaces] = build_interfaces(sample, wavelength)
 
     mesophyllThickness = sample.mesophyllFraction * sample.wholeLeafThickness;
     
-    if sample.bifacial
+    if bifacial
         interfaces = ABMB_interfaces();
     else
         interfaces = ABMU_interfaces();
