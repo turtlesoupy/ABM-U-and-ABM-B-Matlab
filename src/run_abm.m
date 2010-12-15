@@ -1,7 +1,7 @@
 function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI, interfaceArray, nSamples)
     stepFunction  = @step;     
     [x,y,z] = sph2cart(azimuthalI, -polarI + pi/2, 1); %Match canonical
-    startDirection = [x;y;z];
+    startDirection = [x;y;-z]; %Note, interfaces are specified adaxial-first and angle is w.r.t. to abaxial
     
     if startDirection(3) < 0 
          startState    = 1;
