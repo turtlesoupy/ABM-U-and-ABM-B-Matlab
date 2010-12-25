@@ -43,9 +43,8 @@ Code Organization:
                - 'rcH400-2500.txt': Refractive index (real part) of epicuticular wax (400-2500nm)
                - 'rmH400-2500.txt': Refractive index (real part) of wet mesophyll wall (400-2500nm)
 
-    'samples/': This folder contains data definitions for samples used for testing of ABM-U/ABM-B.
-                All samples correspond to those mentioned in http://www.npsg.uwaterloo.ca/resources/docs/rse2006.pdf.
-                All concentrations are specified in g/cm^3, and lengths in meters.
+    - 'samples/': This folder contains data definitions for samples used for testing of ABM-U/ABM-B.
+                  All samples correspond to those mentioned in http://www.npsg.uwaterloo.ca/resources/docs/rse2006.pdf.
                - 'lopex_0141_0142.m': Soybean (Soja hispida or Glycine max), a bifacial leaf for ABM-B
                - 'lopex_0219_0220.m': Corn (Zea mays L.), a unifacial leaf for ABM-U
 
@@ -54,5 +53,7 @@ Notes:
       of a multicore machine, you will want to run the command 'matlabpool open'
       before executing the abmb or abmu functions. This allows matlab to perform the
       simulation on all cores available.
+
+    - All concentrations are specified in g/cm^3, and lengths in meters.
 
     - Data is linearly interpolated across 400-2500nm, with data points every five nanometers.
