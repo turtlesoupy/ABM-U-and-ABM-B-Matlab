@@ -4,6 +4,10 @@ This is a reference implementation of the ABM-B and ABM-U models described in
 http://www.npsg.uwaterloo.ca/resources/docs/rse2006.pdf, with modifications
 described in http://www.npsg.uwaterloo.ca/resources/docs/ieee07-8.pdf
 
+For detailed information, visit the online pages for:
+    - ABM-U: http://www.npsg.uwaterloo.ca/models/ABMU.php
+    - ABM-B: http://www.npsg.uwaterloo.ca/models/ABMB.php
+
 The package is licensed under a BSD license, described in LICENSE. 
 
 This was released by the Natural Phenomenon Simulation Group at University of
@@ -16,6 +20,39 @@ Usage:
 Requirements:
     Matlab (Octave won't work)
 
+Code Organization:
+    The code is organized into separate paths that roughly correspond to functionality.
+    In particular:
+
+    - 'src/': This folder contains all the files necessary for ABM-U/ABM-B to run.
+              - 'abmb.m': runner for "ABM-B"
+              - 'abmu.m': runner for "ABM-U"
+              - 'abm_interface.m': definition of what an interface struct
+              - 'build_interfaces.m': this function assembled all the interfaces required
+                                      for ABM-B/ABM-U (called by the runners)
+              - 'run_abm.m': this function actually performs the simulation for ABM-B/ABM-U
+                             (called by the runners)
+
+    - 'data/': This folder contains the data files (e.g., refractive indices) that are needed
+               to run ABM-B or ABM-U. All are available here: http://www.npsg.uwaterloo.ca/data/leaves.php
+               - 'caro-PAS-400-2500.txt': Specific absorption coefficient of carotenoids (400-2500nm)
+               - 'cellulose400-2500.txt': Specific absorption coefficient of cellulose (400-2500nm)
+               - 'chloAB-DFA-400-2500.txt': Specific absorption coefficient of chlorophyll a+b (400-2500nm)
+               - 'sacwH400-2500.txt': Specific absorption coefficient of water (400-2500nm)
+               - 'raH400-2500.txt': Refractive index (real part) of antidermal cell wall (400-2500nm)
+               - 'rcH400-2500.txt': Refractive index (real part) of epicuticular wax (400-2500nm)
+               - 'rmH400-2500.txt': Refractive index (real part) of wet mesophyll wall (400-2500nm)
+
+    'samples/': This folder contains data definitions for samples used for testing of ABM-U/ABM-B.
+                All samples correspond to those mentioned in http://www.npsg.uwaterloo.ca/resources/docs/rse2006.pdf.
+                All concentrations are specified in g/cm^3, and lengths in meters.
+               - 'lopex_0141_0142.m': Soybean (Soja hispida or Glycine max), a bifacial leaf for ABM-B
+               - 'lopex_0219_0220.m': Corn (Zea mays L.), a unifacial leaf for ABM-U
+
 Notes: 
-    The simulation uses the parallel computing toolbox. Make sure you have a
-    pool open for a speedup.
+    - The simulation uses the parallel computing toolbox. If you want to make use
+      of a multicore machine, you will want to run the command 'matlabpool open'
+      before executing the abmb or abmu functions. This allows matlab to perform the
+      simulation on all cores available.
+
+    - Data is linearly interpolated across 400-2500nm, with data points every five nanometers.

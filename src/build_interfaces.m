@@ -24,12 +24,14 @@ function [interfaces] = build_interfaces(sample, wavelength, bifacial)
     interpFunc = @(lookup) interp1(DATA_WAVELENGTHS, lookup, wavelength, ... 
                     'linear', 'extrap');
 
-    proteinAbsorptionCoefficient     = sample.proteinConcentration * interpFunc(PROTEIN_ABSORPTION_LOOKUP);
+    g_cm3_to_m_kg3 = 1000; %Convert from g/cm^3 to m/kg^3
+                
+    proteinAbsorptionCoefficient     = sample.proteinConcentration * g_cm3_to_m_kg3 * interpFunc(PROTEIN_ABSORPTION_LOOKUP);
     chlorophyllAbsorptionCoefficient = (sample.chlorophyllAConcentration + sample.chlorophyllBConcentration) ...
-                                        * interpFunc(CHLOROPHYLL_ABSORPTION_LOOKUP);
-    carotenoidAbsorptionCoefficient  = sample.carotenoidConcentration * interpFunc(CAROTENOIDS_ABSORPTION_LOOKUP);
-    celluloseAbsorptionCoefficient   = sample.celluloseConcentration  * interpFunc(CELLULOSE_ABSORPTION_LOOKUP);
-    linginAbsorptionCoefficient      = sample.linginConcentration * interpFunc(CELLULOSE_ABSORPTION_LOOKUP);
+                                        * g_cm3_to_m_kg3 * interpFunc(CHLOROPHYLL_ABSORPTION_LOOKUP);
+    carotenoidAbsorptionCoefficient  = sample.carotenoidConcentration * g_cm3_to_m_kg3 * interpFunc(CAROTENOIDS_ABSORPTION_LOOKUP);
+    celluloseAbsorptionCoefficient   = sample.celluloseConcentration  * g_cm3_to_m_kg3 * interpFunc(CELLULOSE_ABSORPTION_LOOKUP);
+    linginAbsorptionCoefficient      = sample.linginConcentration * g_cm3_to_m_kg3 * interpFunc(CELLULOSE_ABSORPTION_LOOKUP);
     
     waterAbsorptionCoefficient = interpFunc(WATER_SAC_LOOKUP);
 

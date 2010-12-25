@@ -1,4 +1,4 @@
-function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI, interfaceArray, nSamples)
+function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI, interfaceArray, nSamples, disableSieve)
     stepFunction  = @step;     
     [x,y,z] = sph2cart(azimuthalI, -polarI + pi/2, 1); %Match canonical
     startDirection = [x;y;-z]; %Note, interfaces are specified adaxial-first and angle is w.r.t. to abaxial
@@ -36,10 +36,10 @@ function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI,
         splitThicknessBelow(splitBelowEnd)   = splitThicknessBelow(splitBelowEnd)   * (1-p);
   
         [state, direction] = stepFunction(interfaceArray(state), state,  ...
-            direction, splitThicknessAbove(state), splitThicknessBelow(state));
+            direction, splitThicknessAbove(state), splitThicknessBelow(state), disableSieve);
         while(state ~= reflectedState && state ~= transmittedState && state ~= absorbedState)
             [state, direction] = stepFunction(interfaceArray(state), state, ...
-                direction, splitThicknessAbove(state), splitThicknessBelow(state));
+                direction, splitThicknessAbove(state), splitThicknessBelow(state), disableSieve);
         end
         
         endStates(sampleI) = state;
@@ -49,7 +49,12 @@ function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI,
     transmittance = sum(endStates == transmittedState) / nSamples;
     absorptance   = sum(endStates == absorbedState) / nSamples;
     
-    function [outState, outVector] = step(interface, state, vector, thicknessAbove, thicknessBelow)
+    function [outState, outVector] = step(interface, state, vector, thicknessAbove, thicknessBelow, disableSieve)
+        if disableSieve
+            pathFunction = @freePathLengthNoSieve;
+        else
+            pathFunction = @freePathLength;
+        end
         if vector(3) < 0 
             normal = [0;0;1];
             n1 = interface.n1;
@@ -77,7 +82,7 @@ function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI,
 
         %Check that we aren't absorbed here        
         if thickness > 0 && ...
-                freePathLength(vector, normal, normalAngle, absorption) < thickness
+                pathFunction(vector, normal, normalAngle, absorption) < thickness
             outState = absorbedState;
             outVector = [0 0 0];
         else
@@ -101,6 +106,10 @@ function [reflectance, transmittance, absorptance] = run_abm(azimuthalI, polarI,
 
     function [length] = freePathLength(vector, normal, cosI, absorptionCoefficient)
         length = -(1/absorptionCoefficient)*log(rand)*cos(cosI);
+    end
+
+    function [length] = freePathLengthNoSieve(vector, normal, cosI, absorptionCoefficient)
+        length = -(1/absorptionCoefficient)*log(rand)*cosI;
     end
 
     function [reflectedVector] = reflect(vector, normal, cosI)
